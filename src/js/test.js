@@ -1,13 +1,57 @@
-console.log('hallo')
-
-
+var mainElement = document.querySelector('main');
 var renderers = {};
 
-var mainElement = document.querySelector('main');
-console.log(mainElement)
 
 
+function creatPagerNav(data,renderList) {
+   var navElement = document.createElement('nav');
 
+  if (data.previous) {
+    var previousButton = document.createElement('button');
+    previousButton.classList.add('previous');
+    previousButton.textContent = 'previous';
+    previousButton.addEventListener('click', function() {
+      loadData(data.previous, renderList);
+    });
+    navElement.appendChild(previousButton);
+  }
+
+  if (data.next) {
+    var nextButton = document.createElement('button');
+    nextButton.classList.add('next');
+    nextButton.textContent = 'next';
+    nextButton.addEventListener('click', function() {
+      loadData(data.next, renderPeople);
+    });
+    navElement.appendChild(nextButton);
+  }
+  return navElement;
+}
+
+function createModal() {
+  var element = document.createElement('div');
+  element.classList.add('modal');
+  element.innerHTML = `<div class="body">
+  <div class="controls">
+    <button>close</button>
+  </div>
+  <div class="content"></div>
+</div>
+<div class="underlay"></div>`;
+  return element;
+}
+
+function showModal(contentElement) {
+  modalContentElement.innerHTML = '';
+  modalContentElement.appendChild(contentElement);
+  modalElement.classList.add('open');
+}
+
+function hideModal() {
+  modalElement.classList.remove('open');
+}
+
+// you can copy that safely, just pay attention to where it has to be paste
 var modalElement = createModal();
 var modalContentElement = modalElement.querySelector('.content');
 var modalCloseButton = modalElement.querySelector('.controls button');
@@ -15,62 +59,51 @@ modalCloseButton.addEventListener('click', hideModal);
 document.body.appendChild(modalElement);
 
 
-function loadData(url,done) {
+
+/**************************************\
+\**************************************/
+
+
+
+function loadData(url, done) {
   var xhr = new XMLHttpRequest();
-  
   xhr.onload = function() {
-      var response = xhr.responseText;
-      var reasponseObj = JSON.parse(response);
-      done(reasponseObj);
-
-      console.log(reasponseObj);
-      console.log(reasponseObj["results"]);
-
-  }
-  xhr.open('GET', url);
+    var response = JSON.parse(xhr.responseText);
+    done(response);
+  };
+  xhr.open('get', url);
   xhr.send();
-
-};
+}
 
 function loadPeople(done) {
   loadData('https://swapi.co/api/people', done);
 }
-function loadPlanet (url , done){
-  loadData(url,done)
+
+function loadPlanet(url, done) {
+  loadData(url, done);
 }
 
-function renderPeople(people) {
-  mainElement.textContent='';
-  var navElement =document.createElement('nav');
-  if (people.previous) {
-    var previousButton = document.createElement('button');
-    previousButton.classList.add('previous');
-    previousButton.textContent = 'Previous';
-    previousButton.addEventListener('click', function(){
-      loadData(people.previous,renderPeople)
-    });
-    navElement.appendChild(previousButton);
-     mainElement.appendChild(navElement);
-  }
-
-    if (people.next) {
-    var nextButton = document.createElement('button');
-    nextButton.classList.add('next');
-    nextButton.textContent = 'Next';
-    nextButton.addEventListener('click', function(){
-      loadData(people.next,renderPeople)
-    });
-    navElement.appendChild(nextButton);
-    mainElement.appendChild(navElement);
-  }
 
 
-  people.results.forEach(function(person) {
+/**************************************\
+\**************************************/
+
+
+function renderPeople(data) {
+  mainElement.textContent = '';
+  var navElement = creatPagerNav(data,renderPeople);  
+
+  var cardsElement = document.createElement('div');
+  cardsElement.classList.add('cards');
+
+  mainElement.appendChild(cardsElement);
+  mainElement.appendChild(navElement);
+
+  data.results.forEach(function(object) {
     var sectionElement = document.createElement('section');
-    sectionElement.classList.add('person');
 
     var genderSymbol;
-    switch (person.gender) {
+    switch (object.gender) {
       case 'male':
         genderSymbol = '♂';
         break;
@@ -79,166 +112,413 @@ function renderPeople(people) {
         break;
       default:
         genderSymbol = '?';
-
     }
+
     sectionElement.innerHTML = `
     <header>
       <h1>
-        ${person.name}
-        <span class="gender" tilte="Gender: ${person.gender}">${genderSymbol}</span>
+        ${object.name}
+        <span class="gender" title="Gender: ${object.gender}">${genderSymbol}</span>
       </h1>
     </header>
     <div>
-    <button class="buttonplanet">Show Planet</button>
+      <button>Show Homeplanet</button>
       <ul>
         <li>
-          <span class="lable">Birth Year :</span>
-         <span class="value">${person.birth_year}</span>
+          <span class="label">Birth Year:</span>
+          <span class="value">${object.birth_year}</span>
         </li>
         <li>
-          <span class="lable">Eye Color :</span>
-          <span class="value">${person.eye_color}</span>
+          <span class="label">Eye Color:</span>
+          <span class="value">${object.eye_color}</span>
         </li>
         <li>
-          <span class="lable">Skin Color :</span>
-          <span class="value">${person.skin_color}</span>
+          <span class="label">Skin Color:</span>
+          <span class="value">${object.skin_color}</span>
         </li>
         <li>
-          <span class="lable">Hair Color :</span>
-          <span class="value">${person.hair_color}</span>
+          <span class="label">Hair Color:</span>
+          <span class="value">${object.hair_color}</span>
         </li>
         <li>
-          <span class="lable">Height :</span>
-          <span class="value">${(person.height/100).toFixed(2)}m</span>
+          <span class="label">Height:</span>
+          <span class="value">${(object.height / 100).toFixed(2)}m</span>
         </li>
         <li>
-          <span class="lable">'Mass :</span>
-          <span class="value">${person.mass}</span>
+          <span class="label">Mass:</span>
+          <span class="value">${object.mass}kg</span>
         </li>
       </ul>
     </div>
     `;
+
+
     sectionElement
       .querySelector('button')
       .addEventListener('click', function() {
-        loadPlanet(person.homeworld, renderPlanet)
-    
+        loadPlanet(object.homeworld, renderPlanet);
+      });
 
-   });
-    mainElement.appendChild(sectionElement);
+    cardsElement.appendChild(sectionElement);
   });
-  console.log(people)
 }
 renderers.people = renderPeople;
 
-function renderUnimplemented(){
-  mainElement.textContent= "Sorry, this is not implemented yet."
-}
+// -------------------------------------
 
-function renderMenu (data){
-  var menuElement = document.getElementsByClassName('mainlist');
-  console.log(menuElement)
+function renderSpecies(data) {
+  mainElement.textContent = '';
+  var navElement = creatPagerNav(data,renderSpecies);  
 
-  var keys = Object.keys(data);
-  keys.forEach(function(key){
-    var liElement = document.createElement('li');
-    var aElement = document.createElement('a');
-    aElement.textContent = key;
-    aElement.addEventListener('click',function(){
-      if (!renderers[keys]) return renderUnimplemented();
-      loadData(data[keys], renderers[keys]);
-    });
+  var cardsElement = document.createElement('div');
+  cardsElement.classList.add('cards');
 
-    liElement.appendChild(aElement);
-    console.log(liElement);
-    
-    menuElement.appendChild(liElement);
-    console.log(menuElement);
-  });
+  mainElement.appendChild(cardsElement);
+  mainElement.appendChild(navElement);
 
-};
-loadData('https://swapi.co/api/', renderMenu)
-
-function renderPlanet(planet) {
+  data.results.forEach(function(object) {
     var sectionElement = document.createElement('section');
-    sectionElement.classList.add('planet');
+
+    var genderSymbol;
+    switch (object.gender) {
+      case 'male':
+        genderSymbol = '♂';
+        break;
+      case 'female':
+        genderSymbol = '♀';
+        break;
+      default:
+        genderSymbol = '?';
+    }
+
     sectionElement.innerHTML = `
     <header>
       <h1>
-        ${planet.name}
+        ${object.name}
+      </h1>
+    </header>
+    <div>
+      <button>Home planet</button>
+      <ul>
+        <li>
+          <span class="label">Language:</span>
+          <span class="value">${object.language}</span>
+        </li>
+        <li>
+          <span class="label">Classification:</span>
+          <span class="value">${object.classification}</span>
+        </li>
+        <li>
+          <span class="label">Designation:</span>
+          <span class="value">${object.designation}</span>
+        </li>
+        <li>
+          <span class="label">Average height:</span>
+          <span class="value">${object.average_height}</span>
+        </li>
+        <li>
+          <span class="label">Skin colors:</span>
+          <span class="value">${(object.skin_colors / 100).toFixed(2)}m</span>
+        </li>
+        <li>
+          <span class="label">Average lifespan:</span>
+          <span class="value">${object.average_lifespan}kg</span>
+        </li>
+      </ul>
+    </div>
+    `;
+
+
+    sectionElement
+      .querySelector('button')
+      .addEventListener('click', function() {
+        loadPlanet(object.homeworld, renderPlanet);
+      });
+
+    cardsElement.appendChild(sectionElement);
+  });
+}
+renderers.species = renderSpecies;
+
+// -------------------------------------
+
+function renderStarships(data) {
+  mainElement.textContent = '';
+  var navElement = creatPagerNav(data,renderStarships); 
+
+  var cardsElement = document.createElement('div');
+  cardsElement.classList.add('cards');
+
+  mainElement.appendChild(cardsElement);
+  mainElement.appendChild(navElement);
+
+  data.results.forEach(function(object) {
+    var sectionElement = document.createElement('section');
+
+    sectionElement.innerHTML = `
+    <header>
+      <h1>
+        ${object.name}
       </h1>
     </header>
     <div>
       <ul>
         <li>
-          <span class="lable">Rotation Period :</span>
-         <span class="value">${planet.rotation_period}</span>
+          <span class="label">MGLT:</span>
+          <span class="value">${object.MGLT}</span>
         </li>
         <li>
-          <span class="lable">Orbital Period</span>
-          <span class="value">${planet.orbital_period}</span>
+          <span class="label">Cargo Capacity:</span>
+          <span class="value">${object.cargo_capacity}</span>
         </li>
         <li>
-          <span class="lable">Diameter</span>
-          <span class="value">${planet.diameter}</span>
+          <span class="label">Consumables:</span>
+          <span class="value">${object.consumables}</span>
         </li>
         <li>
-          <span class="lable">Climate</span>
-          <span class="value">${planet.climate}</span>
+          <span class="label">Cost in Credits:</span>
+          <span class="value">${object.cost_in_credits}</span>
         </li>
         <li>
-          <span class="lable">Gravity</span>
-          <span class="value">${(planet.gravity/100).toFixed(2)}m</span>
+          <span class="label">Crew:</span>
+          <span class="value">${object.crew}</span>
         </li>
         <li>
-          <span class="lable">Terrain</span>
-          <span class="value">${planet.terrain}</span>
+          <span class="label">Hyperdrive Rating:</span>
+          <span class="value">${object.hyperdrive_rating}</span>
+        </li>
+        <li>
+          <span class="label">Length:</span>
+          <span class="value">${object.length}</span>
+        </li>
+        <li>
+          <span class="label">Manufacturer:</span>
+          <span class="value">${object.manufacturer}</span>
+        </li>
+        <li>
+          <span class="label">Max Atmosphere Speed:</span>
+          <span class="value">${object.max_atmosphering_speed}</span>
+        </li>
+        <li>
+          <span class="label">Model:</span>
+          <span class="value">${object.model}</span>
+        </li>
+        <li>
+          <span class="label">Passengers:</span>
+          <span class="value">${object.passengers}</span>
+        </li>
+        <li>
+          <span class="label">Starship Class:</span>
+          <span class="value">${object.starship_class}</span>
         </li>
       </ul>
     </div>
     `;
-    showModal(sectionElement);
 
-  };
-renderers.planet = renderPlanet;
-
-
-function createModal (){
-  var element = document.createElement('div');
-  element.classList.add('modal');
-  element.innerHTML = `
-  <div class="body">
-  <div class="controls">
-    <button class="buttonplanet">close</button>
-  </div>
-  <div class="content"></div>
-</div>
-<div class="underlay"></div>
-`;
-    element
-      .querySelector('button')
-      .addEventListener('click', function() {
-        hideModal(element)
-    
-
-   });
-
-return element
+    cardsElement.appendChild(sectionElement);
+  });
 }
 
-function showModal (contentElement){
- modalContentElement.innerHTML='';
- modalContentElement.appendChild(contentElement);
- modalElement.classList.add('open')
-  
+// -------------------------------------
+
+function renderVehicles(data) {
+  mainElement.textContent = '';
+  var navElement = creatPagerNav(data,renderVehicles); 
+
+  var cardsElement = document.createElement('div');
+  cardsElement.classList.add('cards');
+
+  mainElement.appendChild(cardsElement);
+  mainElement.appendChild(navElement);
+
+  data.results.forEach(function(object) {
+    var sectionElement = document.createElement('section');
+
+    sectionElement.innerHTML = `<header>
+      <h1>${object.name}</h1>
+    </header>
+    <div>
+      <ul>
+        <li>
+          <span class="label">Cargo Capacity:</span>
+          <span class="value">${object.cargo_capacity}</span>
+        </li>
+        <li>
+          <span class="label">Consumables:</span>
+          <span class="value">${object.consumables}</span>
+        </li>
+        <li>
+          <span class="label">Cost in Credits:</span>
+          <span class="value">${object.cost_in_credits}</span>
+        </li>
+        <li>
+          <span class="label">Crew:</span>
+          <span class="value">${object.crew}</span>
+        </li>
+        <li>
+          <span class="label">Length:</span>
+          <span class="value">${object.length}</span>
+        </li>
+        <li>
+          <span class="label">Manufacturer:</span>
+          <span class="value">${object.manufacturer}</span>
+        </li>
+        <li>
+          <span class="label">Max Atmosphere Speed:</span>
+          <span class="value">${object.max_atmosphering_speed}</span>
+        </li>
+        <li>
+          <span class="label">Model:</span>
+          <span class="value">${object.model}</span>
+        </li>
+        <li>
+          <span class="label">Passengers:</span>
+          <span class="value">${object.passengers}</span>
+        </li>
+        <li>
+          <span class="label">Vehicle Class:</span>
+          <span class="value">${object.vehicle_class}</span>
+        </li>
+      </ul>
+    </div>`;
+
+    cardsElement.appendChild(sectionElement);
+  });
 }
-function hideModal (contentElement){
-  contentElement.classList.remove('open')
+renderers.vehicles = renderVehicles;
+
+
+// -------------------------------------
+
+function renderFilms(data) {
+  mainElement.textContent = '';
+  var navElement = creatPagerNav(data,renderFilms); 
+
+  var cardsElement = document.createElement('div');
+  cardsElement.classList.add('cards');
+
+  mainElement.appendChild(cardsElement);
+  mainElement.appendChild(navElement);
+
+  data.results.forEach(function(object) {
+    var sectionElement = document.createElement('section');
+
+    sectionElement.innerHTML = `<header>
+      <h1><small>${object.episode_id}</small> ${object.title}</h1>
+    </header>
+    <div class="opening-crawl">
+      <div class="text">
+        ${object.opening_crawl.split('\n').join('<br/>')}
+      </div>
+    </div>
+    <div>
+      <ul>
+        <li>
+          <span class="label">Director:</span>
+          <span class="value">${object.director}</span>
+        </li>
+        <li>
+          <span class="label">Producer:</span>
+          <span class="value">${object.producer}</span>
+        </li>
+        <li>
+          <span class="label">Release Date:</span>
+          <span class="value">${object.release_date}</span>
+        </li>
+      </ul>
+    </div>`;
+
+    cardsElement.appendChild(sectionElement);
+  });
 }
+renderers.films = renderFilms;
+
+
+
+/**************************************\
+\**************************************/
+
+
+function renderPlanet(planet) {
+  var sectionElement = document.createElement('section');
+  sectionElement.classList.add('planet');
+  sectionElement.innerHTML = `<header>
+    <h1>${planet.name}</h1>
+  </header>
+  <div>
+    <ul>
+      <li>
+        <span class="label">Climate:</span>
+        <span class="value">${planet.climate}</span>
+      </li>
+      <li>
+        <span class="label">Diameter:</span>
+        <span class="value">${planet.diameter}</span>
+      </li>
+      <li>
+        <span class="label">Gravity:</span>
+        <span class="value">${planet.gravity}</span>
+      </li>
+      <li>
+        <span class="label">Orbital Period:</span>
+        <span class="value">${planet.orbital_period}</span>
+      </li>
+    </ul>
+    <ul>
+      <li>
+        <span class="label">Population:</span>
+        <span class="value">${planet.population}</span>
+      </li>
+      <li>
+        <span class="label">Rotation Period:</span>
+        <span class="value">${planet.rotation_period}</span>
+      </li>
+      <li>
+        <span class="label">Surface Water:</span>
+        <span class="value">${planet.surface_water}</span>
+      </li>
+      <li>
+        <span class="label">Terrain:</span>
+        <span class="value">${planet.terrain}</span>
+      </li>
+    </ul>
+  </div>`;
+  showModal(sectionElement);
+}
+
+
+/**************************************\
+\**************************************/
+
+
+function renderUnimplemented() {
+  mainElement.textContent = 'Sorry still working on it';
+}
+
+
+function renderMenu(data) {
+  var menuListElement = document.querySelector('body > header ul');
+
+  var keys = Object.keys(data);
+  keys.forEach(function(key) {
+    var liElement = document.createElement('li');
+
+    var aElement = document.createElement('a');
+    aElement.textContent = key;
+    aElement.addEventListener('click', function() {
+      if (!renderers[key]) return renderUnimplemented();
+      loadData(data[key], renderers[key]);
+    });
+
+    liElement.appendChild(aElement);
+
+    menuListElement.appendChild(liElement);
+  });
+}
+
+
+
+
 
 loadPeople(renderPeople);
-
-
-
-
-
+loadData('https://swapi.co/api/', renderMenu);
